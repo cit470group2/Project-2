@@ -1,0 +1,14 @@
+dn: dc=group2,dc=nku,dc=edu
+dc: group2
+objectClass: top
+objectClass: domain
+
+dn: ou=People,dc=group2,dc=nku,dc=edu
+ou: People
+objectClass: top
+objectClass: organizationalUnit
+
+dn: ou=Group,dc=group2,dc=nku,dc=edu
+ou: Group
+objectClass: top
+objectClass: organizationalUnit

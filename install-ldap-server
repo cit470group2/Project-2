@@ -1,0 +1,101 @@
+#installs all packages needed for the ldap and migrations use
+package_install(){
+yum install openldap-servers openldap-clients -y
+yum install migrationtools -y
+echo "Packages installed successfully"
+}
+
+#adds the users and collects their passwd and group data to be added to the ldap directory 
+addusers(){
+
+#adds users to be used for ldap authentication
+useradd -c "Test User" -s /bin/bash -m -d /home/test -p {SSHA}5nYSgnqDtsRPLF/JL/r2pF1BoQ5hUYGd test
+useradd -c "Parker Frederick" -s /bin/bash -m -d /home/frederickp -p {SSHA}5nYSgnqDtsRPLF/JL/r2pF1BoQ5hUYGd frederickp
+useradd -c "Joseph Clark" -s /bin/bash -m -d /home/clarkj -p {SSHA}5nYSgnqDtsRPLF/JL/r2pF1BoQ5hUYGd clarkj
+useradd -c "Damon Kennedy" -s /bin/bash -m -d /home/kennedyd -p {SSHA}5nYSgnqDtsRPLF/JL/r2pF1BoQ5hUYGd kennedyd
+
+#Collects user information from passwd and group files to be used to add these users to the LDAP directory
+grep "test" /etc/passwd >> accounts
+grep "test" /etc/group >> groups
+grep "frederickp" /etc/passwd >> accounts
+grep "frederickp" /etc/group >> groups
+grep "clarkj" /etc/passwd >> accounts
+grep "clarkj" /etc/group >> groups
+grep "kennedyd" /etc/passwd >> accounts
+grep "kennedyd" /etc/group >> groups
+echo "Users created successfully"
+
+#converts the user data collected earlier to ldif files to be used
+} 
+
+#configures ldap for use, adds the base, and adds ldap as a service to be allowed through the firewall
+ldap_config(){
+systemctl start slapd.service
+systemctl enable slapd
+
+cp -f olcDatabase={2}hdb.ldif /etc/openldap/slapd.d/cn=config/olcDatabase={2}hdb.ldif
+
+cp -f /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
+chown ldap:ldap /var/lib/ldap
+
+ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/core.ldif
+ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/cosine.ldif
+ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/nis.ldif
+ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/inetorgperson.ldif
+
+firewall-cmd --zone=public --add-service=ldap --permanent
+firewall-cmd --zone=public --add-service=ldaps --permanent
+firewall-cmd --reload
+echo "LDAP Base Configured"
+}
+
+#migrates the user infromation collected earlier into the ldap directory
+ldap_migration(){
+#moves preconfigured migrate_commmon file to its correct location
+cp -f migrate_common.ph /usr/share/migrationtools/migrate_common.ph
+
+#converts the user data collected earlier to ldif files to be used
+/usr/share/migrationtools/migrate_passwd.pl ./accounts accounts.ldif 
+rm ./accounts -f
+/usr/share/migrationtools/migrate_group.pl ./groups groups.ldif 
+rm ./groups -f
+
+systemctl restart slapd
+
+#adds the converted ldif files to the ldap directory
+ldapadd -x -D "cn=Manager,dc=group2,dc=nku,dc=edu" -w cit470 -f ./base.ldif
+ldapadd -x -D "cn=Manager,dc=group2,dc=nku,dc=edu" -w cit470 -f ./accounts.ldif
+ldapadd -x -D "cn=Manager,dc=group2,dc=nku,dc=edu" -w cit470 -f ./groups.ldif
+
+echo "LDAP Users Migrated Successfully"
+}
+
+# takes preconfigued diradm.conf file and diradm script and moves them to the correct locations
+diradm(){
+cp -f diradm /usr/local/sbin
+cp -f diradm.conf /etc/diradm.conf
+
+diradm useradd -c "Test User" -s /bin/bash -m -p "cit470" ldap_test
+
+echo "diradm Files Moved"
+}
+
+
+while getopts ":h" OPTION; do
+	case $OPTION in
+	h)
+		echo "This script installs ldap and configures the base of it as well as migrates all accounts to be accessible for use using ldap authentication"
+		exit;;
+	esac
+done
+
+(
+package_install
+addusers
+ldap_config
+ldap_migration
+diradm
+
+systemctl restart slapd
+
+) > ldaplog.txt 2>&1 

@@ -1,0 +1,21 @@
+#Group2 README 
+
+#This archive contains 2 main parts and 5 minor files 
+
+#the 2 main portions of this archive are the install-ldap-server and install-nfs-server
+#these files configure the ldap directory and the a nfs server automatically
+
+#the 5 minor files are as follows
+#base.ldif 			-preconfigured ldap base file
+#diradm				-the diradm script
+#diradm.conf			-preconfigured diradm script configuration file
+#migrate_common.ph 		-preconfigured file to contain the basedn's
+#olcDatabase={2}hdb.ldif	-preconfifured file for base database setup
+
+#to run the LDAP script use the following command: "./install-ldap-server"
+#to run the NFS script use the following command: "./install-nfs-server"
+
+#the -h command can be added to each of the ldap and nfs scripts to describe what they do
+
+#Server IP 10.2.7.49
+

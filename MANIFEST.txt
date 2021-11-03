@@ -1,0 +1,27 @@
+Group 2
+Parker Frederick, Damon Kennedy, Joseph Clark
+
+README
+This gives an overview of this archive and how to run thw two scripts contained within
+
+install-ldap-server
+Script that automatically installs and configures LDAP server onto this device
+
+install-nfs-server
+Script that automaticlly installs and configures NFS server onto this device
+
+migrate_common.ph
+preconfigued migrate_common.ph file that is used to overwrite the default file
+
+olcDatabase={2}hdb.ldif
+preconfigued olcDatabase={2}hdb.ldif file that is used to overwrite the default
+
+diradm
+diradm script file added to user path for use
+
+diradm.conf 
+pre configured configuration file for diradm scrit 
+
+base.ldif
+preconfigued base.ldif entry file to be added to the directory 
+

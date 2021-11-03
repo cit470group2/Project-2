@@ -1,0 +1,51 @@
+new_disk(){
+cp -R /home /tmp/oldhome
+(
+echo n
+echo p
+echo
+echo
+echo w
+) | fdisk /dev/sda
+partprobe /dev/sda
+mkfs.xfs /dev/sda4 -f
+xfs_repair /dev/sda4
+echo "/dev/sda4 /home xfs defaults 0 0" >> /etc/fstab
+mount /dev/sda4
+cp -R /tmp/oldhome/* /home
+}
+
+firewall_config(){
+
+firewall-cmd --zone=public --add-port=2049/tcp --permanent
+firewall-cmd --zone=public --add-port=111/tcp --permanent
+firewall-cmd --zone=public --add-port=20048/tcp --permanent
+firewall-cmd --zone=public --add-port=2049/udp --permanent
+firewall-cmd --zone=public --add-port=111/udp --permanent
+firewall-cmd --zone=public --add-port=20048/udp --permanent
+firewall-cmd --reload
+}
+while getopts ":h" OPTION; do
+	case $OPTION in
+	h)
+		echo "This script sets up nfs server to allow the client to access the /home directory of this device even from any of the allowed clients"
+		exit;;
+	esac
+done
+
+(
+new_disk
+echo "/home 10.2.6.0/23(rw)" >> /etc/exports
+yum install nfs-utils -y
+exportfs -a
+systemctl start nfs
+systemctl start nfslock
+systemctl start rpcbind
+systemctl enable nfs.service
+firewall_config
+) > nfslog.txt 2>&1 
+
+
+
+
+
